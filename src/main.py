@@ -1,7 +1,8 @@
-import numpy as np
+
 import pathlib as path
 import import_data
 from src.evolutionary_algorithm.distance_matrix import distance_matrix
+
 from src.import_data import read_tsp
 
 
@@ -14,7 +15,7 @@ def main():
         print(import_data.read_tsp(tsp_file))
 
 
-    coords = read_tsp("")
+    coords = read_tsp("eil51.tsp")
     dist_matrix = distance_matrix(coords)
     n = len(coords)
 
@@ -22,6 +23,7 @@ def main():
     lam = 100
     mutation_rate = 0.1
     generations = 100
+
 
 if __name__ == '__main__':
     main()
