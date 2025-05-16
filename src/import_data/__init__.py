@@ -18,5 +18,5 @@ def read_tsp(file):
                 if line.startswith('EOF'):
                     break
                 node_id, x, y = line.split()
-                coords.append((int(x), int(y)))
+                coords.append((float(x), float(y)))
         return weight_type, np.array(coords)
