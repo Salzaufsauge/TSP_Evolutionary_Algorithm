@@ -13,10 +13,7 @@ def main():
         data = import_data.read_tsp(tsp_file)
         algorithm = EvolutionaryAlgorithm(data[0], data[1],1600,0.05,900,10,50)
         best_tour,history = algorithm.run(3000)
-        if (len(best_tour[1]) - 1) == len(set(best_tour[1])):
-            print(f"Best tour found for {tsp_file.name} is {best_tour[0]}")
-        else:
-            print(f"{len(best_tour[1])} == {len(set(best_tour[1]))}")
+        print(f"Best tour found for {tsp_file.name} is {best_tour[0]}")
         tour_coords = [data[1][i] for i in best_tour[1]]
         plt.plot(*zip(*tour_coords),'b-',linewidth=2,label="Tour")
         plt.show()
