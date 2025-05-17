@@ -20,12 +20,18 @@ def calc_lat_and_longitude(point):
 
 def calc_geo_distance(point1, point2):
     rrr = 6378.388
-    longitude1, latitude1 = calc_lat_and_longitude(point1)
-    longitude2, latitude2 = calc_lat_and_longitude(point2)
+    latitude1, longitude1 = calc_lat_and_longitude(point1)
+    latitude2, longitude2 = calc_lat_and_longitude(point2)
     q1 = math.cos(longitude1 - longitude2)
     q2 = math.cos(latitude1 - latitude2)
     q3 = math.cos(latitude1 + latitude2)
     return rrr * math.acos(0.5 * ((1.0 + q1) * q2 - (1.0 - q1) * q3)) + 1.0
+
+
+def _fill_child(known, child_template, donor):
+    filling = (val for val in donor if val not in known)
+    it = iter(filling)
+    return [next(it) if val is None else val for val in child_template]
 
 
 class EvolutionaryAlgorithm:
@@ -48,42 +54,44 @@ class EvolutionaryAlgorithm:
         for i in range(iterations):
             self._parents = self._selection(tour_lengths)
             self._variation()
+            self.population = self._parents + self._children
             tour_lengths = self._evaluate_population()
-            self.population = self._selection(tour_lengths) + self._children
-            self._evaluate_population()
             self._history.append(self._best_tour[0])
         return self._best_tour, self._history
 
     def _create_initial_population(self,initial_population_size:int):
         population = []
         for _ in range(initial_population_size):
-            tour = [i for i in range(len(self._coords))]
+            tour = list(range(len(self._coords)))
             random.shuffle(tour)
             population.append(tour)
         return population
 
     def _selection(self,tour_lengths):
         list1, list2 = zip(*sorted(zip(tour_lengths, self.population)))
-        list2 = list(list2)
-        return list2[:self._mu]
+        best_tours = list(list2)[:self._mu]
+        # probably not necessary
+        if self._best_tour:
+            best_tour = self._best_tour[1][:-1]
+            if best_tour not in best_tours:
+                best_tours.append(best_tour)
+        return best_tours
 
     def _evaluate_population(self):
         tour_lengths = []
-        best_distance = None
         for tour in self.population:
             tour_distance = 0.0
             roundtrip = tour + [tour[0]]
             for i in range(1,len(roundtrip)):
-                tour_distance += float(self._distance_matrix[roundtrip[i-1]][roundtrip[i]])
+                tour_distance += self._distance_matrix[roundtrip[i-1]][roundtrip[i]]
             tour_lengths.append(tour_distance)
-            if best_distance is None or tour_distance < best_distance:
-                best_distance = tour_distance
+            if self._best_tour is None or tour_distance < self._best_tour[0]:
                 self._best_tour = (tour_distance,roundtrip.copy())
         return tour_lengths
 
     def _variation(self):
         children = []
-        for _ in range(self._lam):
+        for _ in range(self._lam//2):
             parents = random.sample(self._parents, 2)
             child = self._crossover(parents[0], parents[1])
             if random.random() < self._mutation_probability:
@@ -93,26 +101,20 @@ class EvolutionaryAlgorithm:
             children.extend(child)
         self._children = children
 
+    #implements OX
     def _crossover(self, parent1, parent2):
-        crossover_point1 = random.randint(1,len(self._coords)//3*2)
-        crossover_point2 = random.randint(crossover_point1 + 1,len(self._coords)-2)
+        coords_length = len(self._coords)
+        crossover_point1 = random.randint(1,coords_length-2)
+        crossover_point2 = random.randint(crossover_point1 + 1,coords_length-1)
 
-        split_points = [0] + [crossover_point1,crossover_point2] + [len(self._coords)]
+        middle1 = parent1[crossover_point1:crossover_point2]
+        middle2 = parent2[crossover_point1:crossover_point2]
 
-        parent_split_1 = [parent1[split_points[i]:split_points[i+1]] for i in range(len(split_points)-1)]
-        parent_split_2 = [parent2[split_points[i]:split_points[i+1]] for i in range(len(split_points)-1)]
+        template_child1 = [None] * crossover_point1 + middle1 + [None] * (coords_length - crossover_point2)
+        template_child2 = [None] * crossover_point1 + middle2 + [None] * (coords_length - crossover_point2)
 
-        empty_child1 = [None] * len(parent_split_1[0]) + parent_split_1[1] + [None] * len(parent_split_1[2])
-        empty_child2 = [None] * len(parent_split_2[0]) + parent_split_2[1] + [None] * len(parent_split_2[2])
-
-        known1 = {val for val in empty_child1 if val is not None}
-        known2 = {val for val in empty_child2 if val is not None}
-
-        values1 = (val for val in parent2 if val not in known1)
-        values2 = (val for val in parent1 if val not in known2)
-
-        child1 = [next(values1) if val is None else val for val in empty_child1]
-        child2 = [next(values2) if val is None else val for val in empty_child2]
+        child1 = _fill_child(set(middle1),template_child1,parent2)
+        child2 = _fill_child(set(middle2),template_child2,parent1)
 
         return [child1,child2]
 
@@ -128,7 +130,7 @@ class EvolutionaryAlgorithm:
             case "MAN_2D" | "MAN_3D":
                 return nint(np.sum(np.abs(point1 - point2)))
             case "MAX_2D" | "MAX_3D":
-                return max(nint(point1), nint(point2))
+                return int(np.max(np.abs(point1 - point2)))
             case "GEO":
                 return int(calc_geo_distance(point1, point2))
             case _:
@@ -138,6 +140,7 @@ class EvolutionaryAlgorithm:
         n = len(self._coords)
         dist_matrix = np.zeros((n,n))
         for i in range(n):
-            for j in range(n):
-                dist_matrix[i][j] = self._calculate_distance(self._coords[i],self._coords[j])
+            for j in range(i + 1,n):
+                dist = self._calculate_distance(self._coords[i],self._coords[j])
+                dist_matrix[i][j] = dist_matrix[j][i] = dist
         return dist_matrix

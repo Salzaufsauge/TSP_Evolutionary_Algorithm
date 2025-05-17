@@ -11,7 +11,7 @@ def main():
     tsp_files = get_project_root().glob('data/*.tsp')
     for tsp_file in tsp_files:
         data = import_data.read_tsp(tsp_file)
-        algorithm = EvolutionaryAlgorithm(data[0], data[1],1600,0.05,900,10,50)
+        algorithm = EvolutionaryAlgorithm(data[0], data[1],1600,0.05,900,10,100)
         best_tour,history = algorithm.run(3000)
         print(f"Best tour found for {tsp_file.name} is {best_tour[0]}")
         tour_coords = [data[1][i] for i in best_tour[1]]
