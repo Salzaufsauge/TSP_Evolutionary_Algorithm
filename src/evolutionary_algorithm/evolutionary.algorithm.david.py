@@ -1,5 +1,7 @@
 import math
 import random
+import time
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -200,13 +202,14 @@ def generate_algorithm(mu, lam, initial_population_size, mutation_rate, cities_s
 
 
 def main():
-    file = "F:/DEV/PYHTONPROJECTS/TSP/data/bier127.tsp"
+    t0 = time.time()
+    file = "F:/DEV/PYHTONPROJECTS/TSP/data/eil51.tsp"
     cities, weight_type, city_coords = read_tsp(file)
 
     mu = 900 # Eltern
-    lam = 100 # Nachkommen
+    lam = 500 # Nachkommen
     mutation_rate = 0.05
-    generations = 3000
+    generations = 1500
     initial_population_size = 1600
 
     best_tour, best_length, history = generate_algorithm(mu, lam, initial_population_size, mutation_rate,cities, city_coords, generations)
@@ -230,6 +233,9 @@ def main():
     plt.axis("equal")
     plt.grid(True)
     plt.show()
+
+    t1 = time.time()
+    print(t1 - t0)
 
 if __name__ == "__main__":
     main()
