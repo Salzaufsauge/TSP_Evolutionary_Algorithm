@@ -27,45 +27,6 @@ def read_tsp(file):
                 city_coords.append((float(x), float(y)))
         return cities, weight_type, np.array(city_coords)
 
-def plot_convergence(best_lengths):
-    """
-    Zeichnet die beste Tour-Länge in jeder Generation.
-    best_lengths: Liste der minimalen Längen pro Generation.
-    """
-    plt.figure(figsize=(8, 5))
-    plt.plot(best_lengths, linewidth=2)
-    plt.title("GA-Konvergenzverlauf")
-    plt.xlabel("Generation")
-    plt.ylabel("Beste Tourlänge")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_tour(tour, city_coords):
-    """
-    Zeichnet die Städte und verbindet sie in der Reihenfolge der Tour.
-    tour: Liste von Stadt-Indizes in Besuchsreihenfolge
-    city_coords: Nx2-Array mit den Koordinaten
-    """
-    # Pfad schließen, indem Startstadt ans Ende gehängt wird
-    path = tour + [tour[0]]
-    xs = [city_coords[i][0] for i in path]
-    ys = [city_coords[i][1] for i in path]
-
-    plt.figure(figsize=(6, 6))
-    plt.plot(xs, ys, marker='o', linestyle='-')
-    for idx in tour:
-        x, y = city_coords[idx]
-        plt.text(x, y, str(idx), fontsize=9, ha='right')
-    plt.title("Beste gefundene Tour")
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
 def dist_matrix(cities_size, city_coords):
         dist = np.zeros((cities_size, cities_size), dtype=float)  # Matrix mit [cities] * [cities] Zeilen und Spalten, default ist float64, man kann auch auf int32 wechseln
         for i in range(cities_size):
@@ -121,39 +82,45 @@ def plus_selection(parents, children, mu, matrix):
 
 
 def crossover(parent1, parent2):
-    children = []
+    child1 = []
+    child2 = []
 
     start = random.randint(0, len(parent1) - 1)
     finish = random.randint(start, len(parent1))
-    sub_path_parent1 = parent1[start:finish]
 
+    sub_path_parent1 = parent1[start:finish] # Child 1
     remaining_path_parent2 = [item for item in parent2 if item not in sub_path_parent1]
 
     for i in range(len(parent1)):
         if start <= i < finish:
-            children.append(sub_path_parent1.pop(0))
+            child1.append(sub_path_parent1.pop(0))
         else:
-            children.append(remaining_path_parent2.pop(0))
+            child1.append(remaining_path_parent2.pop(0))
 
-    return children
+    sub_path_parent2 = parent2[start:finish] # Child 2
+    remaining_path_parent1 = [item for item in parent1 if item not in sub_path_parent2]
 
-def mutate(generation, mutation_rate):
-    new_generation = [] # neue mutierte generation
-    for path in generation:
-        new_path = path.copy()
-        if random.random() < mutation_rate: # random. random ist ein float value zwischen 0 und 1
-            index1, index2 = random.randint(0, len(new_path) - 1), random.randint(0, len(new_path) - 1)
-            new_path[index1], new_path[index2] = new_path[index2], new_path[index1]
-            new_generation.append(new_path)
-    return new_generation
+    for i in range(len(parent2)):
+        if start <= i < finish:
+            child2.append(sub_path_parent2.pop(0))
+        else:
+            child2.append(remaining_path_parent1.pop(0))
 
+    return [child1, child2]
 
+def reellwertige_mutation(mu, sigma, mutation_rate):
+    mutated_population = []
+    for individual in mu:
+        new_individual = individual.copy()
+        if random.random() < mutation_rate:
+            noise = np.random.normal(0, 1, size=len(individual))  # N(0,1) für jeden Wert np.random.normal(Erwartungswert, Standardabweichung und länge des invidivuals bzw. bei bier127 = 127)
+            new_individual = new_individual + sigma * noise
+        mutated_population.append(new_individual)
+    return mutated_population
 
 def generate_algorithm(mu, lam, initial_population, mutation_rate, cities_size, city_coords, generations):
     pop = initialize_first_generation(initial_population, cities_size)
     mat = dist_matrix(cities_size, city_coords)
-
-
 
     return
 
