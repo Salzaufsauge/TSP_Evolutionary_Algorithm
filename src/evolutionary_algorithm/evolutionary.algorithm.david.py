@@ -58,10 +58,31 @@ def tour_length(tour, matrix): # Matrix kann beliebiges Berechnungsschema sein. 
 
 def evaluation(population, matrix):
     fitness = []
+    best_length = float('inf')
+    best_tour = None
+
     for tour in population:
         length = tour_length(tour, matrix)
         fitness.append(length)
-    return fitness # Für jede Tour in der Population wird die gesamtlänge berechnet
+        if length < best_length:
+            best_length = length
+            best_tour = tour.copy()
+
+    return fitness, best_tour, best_length # Für jede Tour in der Population wird die gesamtlänge berechnet. best_tour und best_length bestimmt.
+
+
+def parent_selection(population, fitness, mu):
+    paired = []
+    for i in range(len(population)):
+        paired.append([population[i], fitness[i]])
+
+    paired.sort(key=lambda x: x[1])  # Sortiere nach Tourlänge
+
+    parents = []
+    for i in range(mu):
+        parents.append(paired[i][0])
+
+    return parents
 
 def plus_selection(parents, children, mu, matrix):
     combined = [] # nächste generation besteht aus kinder und eltern
@@ -70,7 +91,7 @@ def plus_selection(parents, children, mu, matrix):
     for tour in children:
         combined.append(tour)
 
-    lengths = evaluation(combined, matrix) # fitness bzw. länger der tour, wird berechnet
+    lengths, _, _ = evaluation(combined, matrix) # fitness bzw. länger der tour, wird berechnet
 
     paired = [] # (tour, length). könnte man auch mit zip machen
     for i in range(len(combined)):
@@ -140,39 +161,34 @@ def generate_algorithm(mu, lam, initial_population_size, mutation_rate, cities_s
     population = initialize_first_generation(initial_population_size, cities_size)
     matrix = dist_matrix(cities_size, city_coords)
 
-    for gen in range(generations):
-        fitness = evaluation(population, matrix)
 
-        # Selektion der Eltern => PArent-Selektion
-        paired = list(zip(population, fitness))
-        paired.sort(key=lambda x: x[1])  # sortiert nach Tourlänge
-        parents = [pair[0] for pair in paired[:mu]]
+    for gen in range(generations):
+        # Selektion der Eltern => Parent-Selektion
+        fitness, _, _ = evaluation(population, matrix)
+        parents = parent_selection(population, fitness, mu)
 
         # Variation => Crossover mit Mutation
         children = []
-
         while len(children) < lam:
             p1, p2 = random.sample(parents, 2)
-            children.extend(crossover(p1, p2))  # gibt 2 Kinder zurück
-        # children = children[:lam]  # evtl. überzählige Kinder abschneiden
+            children.extend(crossover(p1, p2))
         children = mutate(children, mutation_rate)
 
-        # Selektion: beste mu aus Eltern + Kindern
-        population = plus_selection(parents, children, mu, matrix)
-        # Aktuelle beste Tour bestimmen
-        current_best = min(population, key=lambda tour: tour_length(tour, matrix))
-        current_best_length = tour_length(current_best, matrix)
+        # Evaluation
+        fitness, current_best, current_best_length = evaluation(population, matrix)
 
         if current_best_length < best_length:
             best_length = current_best_length
             best_tour = current_best.copy()
 
-        history.append(best_length)  # Optional: Für Verlaufsgrafik
+        # Selektion: beste mu aus Eltern + Kindern
+        population = plus_selection(parents, children, mu, matrix)
 
-        # Optional: Ausgabe pro Generation
-        # print(f"Generation {gen + 1}, Beste Länge: {best_length}")
+        history.append(best_length)
 
-    return best_tour, best_length
+        print(f"Generation {gen + 1}, Beste Länge: {best_length}")
+
+    return best_tour, best_length, history
 
 
 
@@ -181,14 +197,33 @@ def main():
     cities, weight_type, city_coords = read_tsp(file)
 
     mu = 500 # Eltern
-    lam = 200 # Nachkommen
-    mutation_rate = 0.05
-    generations = 500
-    initial_population_size = 1500
+    lam = 500 # Nachkommen
+    mutation_rate = 0.10
+    generations = 1500
+    initial_population_size = 500
 
-    best_tour, best_length = generate_algorithm(mu, lam, initial_population_size, mutation_rate,cities, city_coords, generations)
+    best_tour, best_length, history = generate_algorithm(mu, lam, initial_population_size, mutation_rate,cities, city_coords, generations)
     print("Beste Tour:", best_tour)
     print("Länge:", best_length)
+
+    # Plot 1: Verlauf der besten Tourlänge
+    plt.plot(history)
+    plt.xlabel("Generation")
+    plt.ylabel("Tourlänge")
+    plt.title("Verlauf der besten Tourlänge")
+    plt.grid(True)
+    plt.show()
+
+    # Plot 2: Visualisierung der besten Tour
+    tour = best_tour + [best_tour[0]]  # Rundtour
+    x, y = zip(*[city_coords[i] for i in tour])
+
+    plt.figure()
+    plt.plot(x, y, 'o-')
+    plt.title("Beste gefundene Tour")
+    plt.axis("equal")
+    plt.grid(True)
+    plt.show()
 
 if __name__ == "__main__":
     main()
