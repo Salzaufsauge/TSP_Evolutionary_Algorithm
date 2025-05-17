@@ -116,10 +116,10 @@ def plot_tour(tour, coords, history):
 def main():
     # --- Parameter ---
     tsp_file = "F:/DEV/PYHTONPROJECTS/TSP/data/eil51.tsp"
-    mu = 150
+    mu = 200
     lam = 300
     mutation_rate = 0.05
-    generations = 3000
+    generations = 500
 
     # Einlesen & Distanzmatrix
     coords = read_tsplib(tsp_file)
