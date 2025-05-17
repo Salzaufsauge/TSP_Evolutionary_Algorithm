@@ -84,6 +84,14 @@ def parent_selection(population, fitness, mu):
 
     return parents
 
+def variation(parents, lam, mutation_rate):
+    children = []
+    while len(children) < lam:
+        p1, p2 = random.sample(parents, 2)
+        children.extend(crossover(p1, p2))
+    children = mutate(children, mutation_rate)
+    return children
+
 def plus_selection(parents, children, mu, matrix):
     combined = [] # nächste generation besteht aus kinder und eltern
     for tour in parents:
@@ -161,28 +169,27 @@ def generate_algorithm(mu, lam, initial_population_size, mutation_rate, cities_s
     population = initialize_first_generation(initial_population_size, cities_size)
     matrix = dist_matrix(cities_size, city_coords)
 
+    # Evaluation der ersten population
+    fitness, _, _ = evaluation(population, matrix)
+
 
     for gen in range(generations):
         # Selektion der Eltern => Parent-Selektion
-        fitness, _, _ = evaluation(population, matrix)
         parents = parent_selection(population, fitness, mu)
 
         # Variation => Crossover mit Mutation
-        children = []
-        while len(children) < lam:
-            p1, p2 = random.sample(parents, 2)
-            children.extend(crossover(p1, p2))
-        children = mutate(children, mutation_rate)
+        children = variation(parents, lam, mutation_rate)
 
         # Evaluation
         fitness, current_best, current_best_length = evaluation(population, matrix)
 
+        # Selektion: beste mu aus Eltern + Kindern
+        population = plus_selection(parents, children, mu, matrix)
+
+        # für plot
         if current_best_length < best_length:
             best_length = current_best_length
             best_tour = current_best.copy()
-
-        # Selektion: beste mu aus Eltern + Kindern
-        population = plus_selection(parents, children, mu, matrix)
 
         history.append(best_length)
 
@@ -196,11 +203,11 @@ def main():
     file = "F:/DEV/PYHTONPROJECTS/TSP/data/eil51.tsp"
     cities, weight_type, city_coords = read_tsp(file)
 
-    mu = 500 # Eltern
+    mu = 900 # Eltern
     lam = 500 # Nachkommen
     mutation_rate = 0.10
-    generations = 1500
-    initial_population_size = 500
+    generations = 1000
+    initial_population_size = 1600
 
     best_tour, best_length, history = generate_algorithm(mu, lam, initial_population_size, mutation_rate,cities, city_coords, generations)
     print("Beste Tour:", best_tour)
@@ -217,7 +224,6 @@ def main():
     # Plot 2: Visualisierung der besten Tour
     tour = best_tour + [best_tour[0]]  # Rundtour
     x, y = zip(*[city_coords[i] for i in tour])
-
     plt.figure()
     plt.plot(x, y, 'o-')
     plt.title("Beste gefundene Tour")
