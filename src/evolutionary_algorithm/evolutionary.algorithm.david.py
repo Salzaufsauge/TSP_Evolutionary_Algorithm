@@ -48,6 +48,9 @@ def initialize_first_generation(population_size, cities_size):
 
 def tour_length(tour, matrix): # Matrix kann beliebiges Berechnungsschema sein. Erweiterbar auf andere Weight_Types
     distance = 0
+    best_tour = None
+    best_distance = None
+
     for i in range(len(tour) - 1):
         distance += matrix[tour[i], tour[i + 1]]
     distance += matrix[tour[-1], tour[0]] # hier wird noch die letzte Tour berechnet, also zur Anfangsstadt
@@ -108,21 +111,68 @@ def crossover(parent1, parent2):
 
     return [child1, child2]
 
-def reellwertige_mutation(mu, sigma, mutation_rate):
+# def reellwertige_mutation(mu, sigma, mutation_rate):
+#     mutated_population = []
+#     for individual in mu:
+#         new_individual = individual.copy()
+#         if random.random() < mutation_rate:
+#             noise = np.random.normal(0, 1, size=len(individual))  # N(0,1) für jeden Wert np.random.normal(Erwartungswert, Standardabweichung und länge des invidivuals bzw. bei bier127 = 127)
+#             new_individual = new_individual + sigma * noise
+#         mutated_population.append(new_individual)
+#     return mutated_population
+
+def mutate(population, mutation_rate):
     mutated_population = []
-    for individual in mu:
-        new_individual = individual.copy()
+    for tour in population:
+        new_tour = tour.copy()
         if random.random() < mutation_rate:
-            noise = np.random.normal(0, 1, size=len(individual))  # N(0,1) für jeden Wert np.random.normal(Erwartungswert, Standardabweichung und länge des invidivuals bzw. bei bier127 = 127)
-            new_individual = new_individual + sigma * noise
-        mutated_population.append(new_individual)
+            i, j = random.sample(range(len(tour)), 2)
+            new_tour[i], new_tour[j] = new_tour[j], new_tour[i]
+        mutated_population.append(new_tour)
     return mutated_population
 
-def generate_algorithm(mu, lam, initial_population, mutation_rate, cities_size, city_coords, generations):
-    pop = initialize_first_generation(initial_population, cities_size)
-    mat = dist_matrix(cities_size, city_coords)
+def generate_algorithm(mu, lam, initial_population_size, mutation_rate, cities_size, city_coords, generations):
+    best_tour = None
+    best_length = float('inf')
+    history = []
 
-    return
+    # Initiale Population und Distanzmatrix
+    population = initialize_first_generation(initial_population_size, cities_size)
+    matrix = dist_matrix(cities_size, city_coords)
+
+    for gen in range(generations):
+        fitness = evaluation(population, matrix)
+
+        # Selektion der Eltern => PArent-Selektion
+        paired = list(zip(population, fitness))
+        paired.sort(key=lambda x: x[1])  # sortiert nach Tourlänge
+        parents = [pair[0] for pair in paired[:mu]]
+
+        # Variation => Crossover mit Mutation
+        children = []
+
+        while len(children) < lam:
+            p1, p2 = random.sample(parents, 2)
+            children.extend(crossover(p1, p2))  # gibt 2 Kinder zurück
+        # children = children[:lam]  # evtl. überzählige Kinder abschneiden
+        children = mutate(children, mutation_rate)
+
+        # Selektion: beste mu aus Eltern + Kindern
+        population = plus_selection(parents, children, mu, matrix)
+        # Aktuelle beste Tour bestimmen
+        current_best = min(population, key=lambda tour: tour_length(tour, matrix))
+        current_best_length = tour_length(current_best, matrix)
+
+        if current_best_length < best_length:
+            best_length = current_best_length
+            best_tour = current_best.copy()
+
+        history.append(best_length)  # Optional: Für Verlaufsgrafik
+
+        # Optional: Ausgabe pro Generation
+        # print(f"Generation {gen + 1}, Beste Länge: {best_length}")
+
+    return best_tour, best_length
 
 
 
