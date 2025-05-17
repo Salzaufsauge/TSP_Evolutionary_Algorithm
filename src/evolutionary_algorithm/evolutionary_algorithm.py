@@ -1,11 +1,11 @@
 import math
 import random
+
 import numpy as np
 
 
 def nint(val):
     return int(val + 0.5)
-
 
 def calc_lat_and_longitude(point):
     deg_lat = nint(point[0])
@@ -62,8 +62,7 @@ class EvolutionaryAlgorithm:
     def _create_initial_population(self,initial_population_size:int):
         population = []
         for _ in range(initial_population_size):
-            tour = list(range(len(self._coords)))
-            random.shuffle(tour)
+            tour = np.random.permutation(len(self._coords)).tolist()
             population.append(tour)
         return population
 
@@ -80,10 +79,8 @@ class EvolutionaryAlgorithm:
     def _evaluate_population(self):
         tour_lengths = []
         for tour in self.population:
-            tour_distance = 0.0
             roundtrip = tour + [tour[0]]
-            for i in range(1,len(roundtrip)):
-                tour_distance += self._distance_matrix[roundtrip[i-1]][roundtrip[i]]
+            tour_distance = np.sum(self._distance_matrix[roundtrip[:-1],roundtrip[1:]])
             tour_lengths.append(tour_distance)
             if self._best_tour is None or tour_distance < self._best_tour[0]:
                 self._best_tour = (tour_distance,roundtrip.copy())
