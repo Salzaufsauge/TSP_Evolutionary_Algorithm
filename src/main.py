@@ -26,16 +26,16 @@ def main():
     t2 = time.time()
 
     with ProcessPoolExecutor() as executor:
-        futures = [executor.submit(run_algorithm, tsp_data) for _ in range(10)]
+        futures = [executor.submit(run_algorithm, tsp_data) for _ in range(5)]
         histories = [f.result() for f in futures]
 
     average_history = [sum(histories) / len(histories) for histories in zip(*histories)]
     plt.figure(figsize=(10, 6))
 
     for i, history in enumerate(histories):
-        plt.plot(history, color='lightgray', linewidth=1, label=f'Run {i}' )
+        plt.plot(history, color='lightgray', linewidth=1, label=f'Run {i}: {history[-1]:.0f}' )
 
-    plt.plot(average_history, color='red', linewidth=2, label='Average')
+    plt.plot(average_history, color='red', linewidth=2, label=f'Average {average_history[-1]:.0f}')
 
     N = 200
     for i in range(0, len(average_history), N):
