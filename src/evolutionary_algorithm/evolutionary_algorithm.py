@@ -91,9 +91,9 @@ class EvolutionaryAlgorithm:
         for _ in range(self._lam//2):
             parents = random.sample(self._parents, 2)
             child = self._crossover(parents[0], parents[1])
-            if random.random() < self._mutation_probability:
+            if random.randint(0,1):
                 self._mutate(child[0])
-            if random.random() < self._mutation_probability:
+            if random.randint(0,1):
                 self._mutate(child[1])
             children.extend(child)
         self._children = children
@@ -116,9 +116,10 @@ class EvolutionaryAlgorithm:
         return [child1,child2]
 
     def _mutate(self, child):
-        for i in range(len(child) - self._sigma):
-            if random.randint(0,1):
-                child[i],child[i+self._sigma] = child[i+self._sigma],child[i]
+        for i in range(len(child)):
+            if random.random() < self._mutation_probability:
+                idx = (i + self._sigma) % len(child)
+                child[i],child[idx] = child[idx],child[i]
 
     def _calculate_distance(self,point1,point2) -> int:
         match self.distance_method:
