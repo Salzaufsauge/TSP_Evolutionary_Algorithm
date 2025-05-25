@@ -203,14 +203,14 @@ def generate_algorithm(mu, lam, initial_population_size, mutation_rate, cities_s
 
 def main():
     t0 = time.time()
-    file = "F:/DEV/PYHTONPROJECTS/TSP/data/bier127.tsp"
+    file = "F:/DEV/PYHTONPROJECTS/TSP/data/eil51.tsp"
     cities, weight_type, city_coords = read_tsp(file)
 
     mu = 1000 # Eltern
-    lam = 500 # Nachkommen
-    mutation_rate = 0.15
-    generations = 1000
-    initial_population_size = 1000
+    lam = 800 # Nachkommen
+    mutation_rate = 0.05
+    generations = 500
+    initial_population_size = 3000
 
     best_tour, best_length, history = generate_algorithm(mu, lam, initial_population_size, mutation_rate,cities, city_coords, generations)
     print("Beste Tour:", best_tour)
